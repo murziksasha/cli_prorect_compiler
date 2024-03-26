@@ -1,20 +1,23 @@
-//@ts-ignore
+
 import * as esbuild from 'esbuild-wasm';
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { unpkgPathPlugin } from '../../plugins/unpkg-path-plugin';
+import { fetchPlugin } from '../../plugins/fetch-plugin';
 
 
 function App() {
+  const ref = useRef<any>();
   const [input, setInput] = useState('');
   const [code, setCode] = useState('');
+  const [headerInput, setHeaderInput] = useState('');
 
 
   const initializeEsbuild = async () => {
     try {
-      const service = await esbuild.startService({
+      ref.current = await esbuild.startService({
         worker: true,
-        wasmURL: '/esbuild.wasm'
+        wasmURL: 'https://unpkg.com/esbuild-wasm@0.8.27/esbuild.wasm'
       });
-      console.log(service);
     } catch (error) {
       console.error('Error initializing esbuild service:', error);
     }
@@ -29,18 +32,54 @@ function App() {
     setInput(e.target.value);
   }
 
-  const handleClick = () => {
-    setCode(input);
+  const handleClick = async () => {
+    setCode('');    
+    // setInput('');
+    if(!ref.current) return;
+    const result = await ref.current.build({
+      entryPoints: ['index.js'],
+      bundle: true,
+      write: false,
+      plugins: [
+        unpkgPathPlugin(),
+        fetchPlugin(input)
+      ],
+      define: {
+        'process.end.NODE_ENV': '"production"',
+        global: 'window'
+      }
+    });
+    setCode(result.outputFiles[0].text);
+
+    try {
+      eval(result.outputFiles[0].text);
+    } catch (error) {
+      alert(error);
+    }
+
+    setHeaderInput(input);
+
+  }
+
+  
+  const handleClickReset = () => {
+    setCode('');
     setInput('');
+    setHeaderInput('');
   }
 
   return (
-    <div>
-      <textarea onChange={handleChange} value={input}/>
+    <div style={{margin: '20px 20px', position: 'relative', marginLeft: '50%'}}>
+      <h3>Please enter any valid JavaScript/React code (includes all libraries)</h3>
+      <textarea onChange={handleChange} value={input} placeholder='Enter your code or any name of library...' rows={15} cols={120}
+      />
       <div>
         <button onClick={handleClick}>Submit</button>
+        <button onClick={handleClickReset}>Reset</button>
       </div>
-      <pre>{code}</pre>
+      {headerInput && <h2>{headerInput}</h2>}
+      {code && <pre>{code}</pre>}
+      <iframe src="./iframe.html"></iframe>
     </div>
   )
 }

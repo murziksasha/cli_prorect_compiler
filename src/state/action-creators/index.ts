@@ -1,7 +1,7 @@
 
 
 import { ActionType } from '../action-types';
-import { Action, DeleteCellAction, Direction, InsertCellBeforeAction, MoveCellAction, UpdateCellAction } from '../actions';
+import { DeleteCellAction, Direction, InsertCellBeforeAction, MoveCellAction, UpdateCellAction } from '../actions';
 import { CellTypes } from '../cell';
 
 
